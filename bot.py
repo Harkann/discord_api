@@ -1,9 +1,10 @@
 from user import User
 import json as js
 import websocket # websockets
-import _thread as thread
+import threading
 import time
-
+from parser import parse_response
+from termcolor import cprint
 
 class Bot():
 
@@ -18,14 +19,47 @@ class Bot():
         self.token = token
         self.user = User(token)
         self.gateway_url = js.loads(self.user.get_gateway())["url"]
-        self.ws = websocket.create_connection(self.gateway_url)
-        self.identify()
-        self.response = self.ws.recv()
+        self.sequence = None
+        self.heartbeat = js.dumps({
+            "op": 1,
+            "d": self.sequence
+        })
+        self.running = self.connect()
+        if self.running:
+            self.routine_thread = threading.Thread(group=None, target=self.routine)
+            self.routine_thread.start()
+            self.identify()
+        self.heartbeat = js.dumps({
+            "op": 1,
+            "d": (self.sequence if type(self.sequence) == int() else "null")
+        })
+        self.receive_thread = threading.Thread(group=None, target=self.receive)
+
+        self.receive_thread.start()
+
+    def connect(self):
+        self.ws = websocket.create_connection("%s?v=6&encoding=json" % self.gateway_url)
+        response = parse_response(self.ws.recv())
+        self.sequence = response["s"]
+        self.heartbeat_interval = response["heartbeat_interval"]
+        return True
+
+
 
     def receive(self):
-        pass
+        while(self.running):
+            response = self.ws.recv()
+            self.sequence = parse_response(response)
+
     def routine(self):
-        pass
+        while(self.running):
+            self.ws.send(self.heartbeat)
+            cprint("Heartbeat sent with", "blue")
+            cprint("| s:{}".format(self.sequence), "blue")
+            # print(self.ws.recv())
+            time.sleep(self.heartbeat_interval//1000)
+
+
 
     def identify(self):
         payload = js.dumps(
