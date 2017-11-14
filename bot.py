@@ -15,9 +15,10 @@ class Bot():
         on_error = None,
         on_close = None
     ):
-
+        self.debug = True
         self.token = token
-        self.user = User(token)
+        self.user = User(token=token)
+        self.guilds = []
         self.gateway_url = js.loads(self.user.get_gateway())["url"]
         self.sequence = None
         self.heartbeat = js.dumps({
@@ -39,9 +40,7 @@ class Bot():
 
     def connect(self):
         self.ws = websocket.create_connection("%s?v=6&encoding=json" % self.gateway_url)
-        response = parse_response(self.ws.recv())
-        self.sequence = response["s"]
-        self.heartbeat_interval = response["heartbeat_interval"]
+        parse_response(self.ws.recv(), self)
         return True
 
 
@@ -49,7 +48,7 @@ class Bot():
     def receive(self):
         while(self.running):
             response = self.ws.recv()
-            self.sequence = parse_response(response)
+            parse_response(response, self)
 
     def routine(self):
         while(self.running):
