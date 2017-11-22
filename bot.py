@@ -76,8 +76,8 @@ class Bot():
                 "shard": [0, 1],
                 "presence": {
                     "game": {
-                        "name": "test",
-                        "type": 0,
+                        "name": "Coder un bot",
+                        "type": 1,
                     },
                     "status": "online",
                     #"since":
