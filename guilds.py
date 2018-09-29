@@ -1,4 +1,5 @@
 from user import User
+from messages import Message
 
 class Guild():
     def __init__(self,json_guild):
@@ -30,6 +31,7 @@ class Guild():
         self.members = []
         self.channels = None
         self.presences = None
+        self.messages = []
 
         self.update(json_guild)
 
@@ -42,3 +44,6 @@ class Guild():
                     self.members.append(User(json_user=m))
             else:
                 setattr(self, key, json_guild[key])
+
+    def insert_message(self, json_message):
+        self.messages.append(Message(json_message))

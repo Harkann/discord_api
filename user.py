@@ -85,6 +85,19 @@ class User():
         else:
             return None
 
+    def send_message(self, channel_id, content):
+        url = "{}/v{}/channels/{}/messages".format(
+            BASE_URL,
+            VERSION,
+            channel_id)
+        payload = dict()
+        payload = dict(payload, **{"content": content})
+        response = requests.post(url=url, headers=self.generate_header(), json=payload)
+        if response.status_code == requests.codes.ok:
+            return response.text
+        else:
+            return None
+
     def update(self, json_user):
         for key in json_user.keys():
             setattr(self,key,json_user[key])

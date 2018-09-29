@@ -1,5 +1,6 @@
 import json as js
 from guilds import Guild
+from messages import Message
 from termcolor import cprint
 
 def parse_dispatch(d_type, payload, bot):
@@ -49,16 +50,29 @@ def parse_dispatch(d_type, payload, bot):
         pass
 
     elif d_type == "MESSAGE_CREATE":
-        pass
+        found = False
+
+        for g in bot.guilds:
+            if payload["guild_id"] == g.id:
+                g.insert_message(payload)
+                found = True
+        if not found:
+            print("UNKNOWN_GUILD")
+        # printing for debug purposes
+        for key in payload:
+            cprint("| {}:{}".format(key, payload[key]), "green")
+        bot.on_message_create(Message(payload))
+
+
 
     elif d_type == "MESSAGE_UPDATE":
         pass
 
 def parse_response(response, bot):
     response = js.loads(response)
-
     op = response["op"]
     if op == 0:
+        # RECEIVE only
         t = response["t"]
         s = response["s"]
         d = response["d"]
@@ -66,40 +80,48 @@ def parse_response(response, bot):
         parse_dispatch(t,d, bot)
         return s
     elif op == 1:
+        # SEND / RECEIVE
         cprint("Heartbeat with", "red")
     elif op == 2:
+        # SEND only
         cprint("Identify with", "red")
     elif op == 3:
+        # SEND only
         cprint("Status Update with", "red")
     elif op == 4:
+        # SEND only
         cprint("Voice Status Update with", "red")
     elif op == 5:
+        # SEND only
         cprint("Voice Server Ping with", "red")
     elif op == 6:
+        # SEND only
         cprint("Resume with", "red")
     elif op == 7:
+        # RECEIVE only
         cprint("Reconnect with", "red")
     elif op == 8:
+        # SEND only
         cprint("Request Guild Members with", "red")
     elif op == 9:
+        # RECEIVE only
         cprint("Invalid Session with", "red")
     elif op == 10:
+        # RECEIVE only
         t = response["t"]
         s = response["s"]
         d = response["d"]
         heartbeat_interval = d["heartbeat_interval"]
+        _trace = d["_trace"]
         cprint("Hello with", "yellow")
-        cprint("| t:{}, s:{}".format(t,s), "yellow")
-        cprint("| heartbeat_interval:{}".format(heartbeat_interval), "yellow")
+        cprint("| t: {}, s: {}".format(t,s), "yellow")
+        cprint("| heartbeat_interval: {}".format(heartbeat_interval), "yellow")
+        cprint("| _trace: {}".format(_trace), "yellow")
         bot.sequence = s
         bot.heartbeat_interval = heartbeat_interval
     elif op == 11:
-        t = response["t"]
-        s = response["s"]
-        d = response["d"]
+        # RECEIVE only
         cprint("Heartbeat ACK with", "red")
-        cprint("| t:{}, s:{}, d:{}".format(t,s,d), "red")
-        bot.sequence = s
     else:
         print("OP code not supported")
         pass
